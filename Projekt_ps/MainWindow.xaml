@@ -4,9 +4,17 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Projekt_ps"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        mc:Ignorable="d" 
+        Icon="Icon.ico"
+        Closing="MainWindow_Closing"
+        Title="Serwer" Height="450" Width="800" ResizeMode="CanMinimize">
     <Grid>
-        
+        <Grid.Background>
+            <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                <GradientStop Color="Black" Offset="0"/>
+                <GradientStop Color="#FFFDF200" Offset="1"/>
+            </LinearGradientBrush>
+        </Grid.Background>
+
     </Grid>
 </Window>

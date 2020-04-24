@@ -1,0 +1,1 @@
+Projek semestralny z programowania systemowego

@@ -15,6 +15,10 @@
                 <GradientStop Color="#FFFDF200" Offset="1"/>
             </LinearGradientBrush>
         </Grid.Background>
+        <Label Content="Aktywni użytkownicy:" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" RenderTransformOrigin="-4.263,-5" Width="179" Height="40" Foreground="White" FontSize="18" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
+        <Label x:Name="lbl_active_users" Content="" HorizontalAlignment="Left" Margin="189,10,0,0" VerticalAlignment="Top" FontSize="18" Foreground="White" Height="40" Width="33" FontStretch="UltraCondensed" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+        <Label Content="Łączna ilość użytkowników:" HorizontalAlignment="Left" Margin="10,60,0,0" VerticalAlignment="Top" RenderTransformOrigin="-4.263,-5" Width="227" Height="40" Foreground="White" FontSize="18" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
+        <Label x:Name="lbl_all_users" Content="" HorizontalAlignment="Left" Margin="237,60,0,0" VerticalAlignment="Top" FontSize="18" Foreground="White" Height="40" Width="33" FontStretch="UltraCondensed" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
 
     </Grid>
 </Window>

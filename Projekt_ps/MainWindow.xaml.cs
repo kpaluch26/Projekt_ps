@@ -62,6 +62,24 @@ namespace Projekt_ps
             }
         }*/
 
+        private void CheckUsers()
+        {
+            try
+            {
+                MySqlDataReader read;
+                string ask = "SELECT COUNT(*) FROM Users";
+                MySqlCommand task = new MySqlCommand(ask, msqlcon);
+                read = task.ExecuteReader();
+                read.Read();
+                lbl_all_users.Content = read.GetInt32(0).ToString();
+                read.Close();
+            }
+            catch
+            {
+                MessageBox.Show("Nie udało się połączyć z bazą danych", "Błąd");
+            }
+        }
+
         private void DatabaseConnection()
         {
             try
@@ -72,6 +90,11 @@ namespace Projekt_ps
             catch
             {
                 MessageBox.Show("Nie udało się połączyć z bazą danych", "Błąd");
+            }
+            finally
+            {
+                lbl_active_users.Content = "0";
+                CheckUsers();
             }
         }
 

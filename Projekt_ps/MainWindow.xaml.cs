@@ -16,6 +16,7 @@ namespace Projekt_ps
     public partial class MainWindow : Window
     {
         private MySqlConnection msqlcon = new MySqlConnection("Server=remotemysql.com;Port=3306;Database=DTzose51Js;Uid=DTzose51Js;pwd=ER2VaqmwbB;");
+        private int users_counter=0;
 
         public MainWindow()
         {
@@ -62,41 +63,58 @@ namespace Projekt_ps
             }
         }*/
 
-        private void CheckUsers()
-        {
-            try
-            {
-                MySqlDataReader read;
-                string ask = "SELECT COUNT(*) FROM Users";
-                MySqlCommand task = new MySqlCommand(ask, msqlcon);
-                read = task.ExecuteReader();
-                read.Read();
-                lbl_all_users.Content = read.GetInt32(0).ToString();
-                read.Close();
-            }
-            catch
-            {
-                MessageBox.Show("Nie udało się połączyć z bazą danych", "Błąd");
-            }
-        }
-
         private void DatabaseConnection()
         {
             try
             {
                 msqlcon.Open();
                 MessageBox.Show("Połączono z bazą danych", "Sukces");
+                users_counter = CheckUsers();
+                lbl_all_users.Content = users_counter.ToString();
+            }
+            catch
+            {
+                MessageBox.Show("Nie udało się połączyć z bazą danych, zamykanie aplikacji!", "Krytyczny błąd");
+                Environment.Exit(0);
+            }
+        }
+
+        private void addUser()
+        {
+            try
+            {
+                string ask = "INSERT INTO Users(ID,Login,Password) VALUES (" + (users_counter + 1) +  ",'kot','pies')";
+                MySqlCommand task = new MySqlCommand(ask, msqlcon);
+                task.ExecuteNonQuery();
+                users_counter++;
+                lbl_all_users.Content = users_counter.ToString();
+            }
+            catch
+            {
+                MessageBox.Show("Taki użytkownik już istnieje!", "Błędny login!");
+            }
+        }
+
+        private int CheckUsers()
+        {
+            try
+            {
+                MySqlDataReader read;
+                int x = 0;
+                string ask = "SELECT COUNT(*) FROM Users";
+                MySqlCommand task = new MySqlCommand(ask, msqlcon);
+                read = task.ExecuteReader();
+                read.Read();
+                x = read.GetInt32(0);
+                read.Close();
+                return x;
             }
             catch
             {
                 MessageBox.Show("Nie udało się połączyć z bazą danych", "Błąd");
+                return 0;
             }
-            finally
-            {
-                lbl_active_users.Content = "0";
-                CheckUsers();
-            }
-        }
+        }    
 
         private void MainWindow_Closing(object sender, CancelEventArgs e)
         {
@@ -107,5 +125,6 @@ namespace Projekt_ps
                 msqlcon.Close();
             }
         }
+
     }
 }

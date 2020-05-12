@@ -19,6 +19,7 @@
         <Label x:Name="lbl_active_users" Content="0" HorizontalAlignment="Left" Margin="189,10,0,0" VerticalAlignment="Top" FontSize="18" Foreground="White" Height="40" Width="33" FontStretch="UltraCondensed" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
         <Label Content="Łączna ilość użytkowników:" HorizontalAlignment="Left" Margin="10,60,0,0" VerticalAlignment="Top" RenderTransformOrigin="-4.263,-5" Width="227" Height="40" Foreground="White" FontSize="18" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
         <Label x:Name="lbl_all_users" Content="0" HorizontalAlignment="Left" Margin="237,60,0,0" VerticalAlignment="Top" FontSize="18" Foreground="White" Height="40" Width="33" FontStretch="UltraCondensed" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+        <ListBox x:Name="lst_spis" Margin="10,105,0,0" Height="275" VerticalAlignment="Top" HorizontalAlignment="Left" Width="474"/>
 
     </Grid>
 </Window>

@@ -1,17 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using MySql.Data;
 using MySql.Data.MySqlClient;
 using System.Threading;
-using System.Data;
 using System.ComponentModel;
 using System.Net.Sockets;
 using System.Net;
+using System.IO;
 
 namespace Projekt_ps
 {
@@ -27,6 +24,7 @@ namespace Projekt_ps
         private static readonly byte[] buffer = new byte[BUFFER_SIZE];
         private BackgroundWorker m_oBackgroundWorker = null;
         private static List<Task> tasklist = new List<Task>();
+        private List<string> permits=new List<string>();
 
         public MainWindow()
         {
@@ -85,6 +83,7 @@ namespace Projekt_ps
         {
             Socket current = (Socket)AR.AsyncState;
             int received;
+            bool help = true;
 
             try
             {
@@ -128,16 +127,25 @@ namespace Projekt_ps
 
                 if (roger[0].ToLower() == "registration")
                 {
-                    /*try
-                    {*/
                         Task t = new Task(() => { Dispatcher.Invoke(() => { addUser(roger[1], roger[2]); }); });
                         tasklist.Add(SingletonSecured.Instance.AddTask(t));
                         t.Start();
-                    //}
-                    /*catch(Exception e)
-                    {
-                        MessageBox.Show(e.ToString());
-                    }*/
+                }
+                else if (roger[0].ToLower() == "login")
+                {
+                    Task t = new Task(() => { Dispatcher.Invoke(() => { log_in(roger[1], roger[2], current.LocalEndPoint.ToString()); }); });
+                    tasklist.Add(SingletonSecured.Instance.AddTask(t));
+                    t.Start();
+                    t.Wait();
+                    foreach(string x in permits)
+                    {                        
+                        if (x == roger[1]+";"+ current.LocalEndPoint.ToString())
+                        {
+                            current.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback_loged, current);
+                            help = false;
+                            break;
+                        }
+                    }
                 }
                 //Console.WriteLine("Text is an invalid request");
                 //byte[] data = Encoding.ASCII.GetBytes("Invalid request");
@@ -146,9 +154,65 @@ namespace Projekt_ps
                 //Task t = new Task(() => { Dispatcher.Invoke(() => { lst_spis.Items.Add("Received Text from " + current.RemoteEndPoint + ": " + text); }); });
                 //tasklist.Add(SingletonSecured.Instance.AddTask(t));
                 //t.Start();
+                if (help)
+                {
+                    current.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback, current);
+                }
+            }
+        }
+
+        private void ReceiveCallback_loged(IAsyncResult AR)
+        {
+            Socket current = (Socket)AR.AsyncState;
+            int received;
+            string name="nazwa_pliku";
+            string[] connect_data = null;
+            foreach(string x in permits)
+            {
+                connect_data = x.Split(';');
+                if (connect_data[1] == current.LocalEndPoint.ToString())
+                {
+                    name=connect_data[0];
+                    break;
+                }
             }
 
-            current.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback, current);
+            try
+            {
+                received = current.EndReceive(AR);
+            }
+            catch (SocketException)
+            {
+                Dispatcher.Invoke(() => { lst_spis.Items.Add("Client: " + current.RemoteEndPoint + " forcefully disconnected"); });
+                updateCounterOfActiveUsers(false);
+                current.Close();
+                clientSockets.Remove(current);
+                return;
+            }
+
+            byte[] recBuf = new byte[received];
+            Array.Copy(buffer, recBuf, received);
+            string text = Encoding.ASCII.GetString(recBuf);
+            if (text.ToLower() == "exit") 
+            {
+                Dispatcher.Invoke(() => { lst_spis.Items.Add("Client: " + current.RemoteEndPoint + " disconnected"); });
+                updateCounterOfActiveUsers(false);
+                current.Shutdown(SocketShutdown.Both);
+                current.Close();
+                clientSockets.Remove(current);
+                return;
+            }
+            else
+            {
+                Dispatcher.Invoke(() => { lst_spis.Items.Add(text); });
+                FileStream f = new FileStream("d:\\studia\\Programowanie_C++\\sem_VI\\Projekt\\Projekt_ps\\"+name+".txt", FileMode.Append, FileAccess.Write);
+                StreamWriter w = new StreamWriter(f);
+                w.Write(text+"\n");
+                w.Close();
+                f.Close();
+            }
+
+            current.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback_loged, current);
         }
 
         private void updateCounterOfActiveUsers(bool x)
@@ -202,6 +266,33 @@ namespace Projekt_ps
                 lbl_all_users.Content = users_counter.ToString();
             }
         }
+
+        private void log_in(string l, string p, string a)
+        {
+            try
+            {
+                MySqlDataReader read;
+                string ask = "Select count(*) FROM Users WHERE Login ='" + l + "' AND Password='" + p + "'";
+                MySqlCommand task = new MySqlCommand(ask, msqlcon);
+                read = task.ExecuteReader();
+                read.Read();
+                if (read.GetInt32(0) == 1)
+                {   
+                    lst_spis.Items.Add("Pomyślnie zalogowano się na użytkownika: " + l);
+                    permits.Add(l+";"+a);
+                }
+                else
+                {
+                    lst_spis.Items.Add("Błędne dane uwierzytelniające z adresu: " + a);                    
+                }
+                read.Close();
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.ToString());  
+            }
+        }
+        
 
         private int CheckUsers()
         {

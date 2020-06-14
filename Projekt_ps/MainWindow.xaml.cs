@@ -135,7 +135,7 @@ namespace Projekt_ps
                 {
                     int h = users_counter;
 
-                    Task t = new Task(() => { Dispatcher.Invoke(() => { addUser(roger[1], roger[2]); }); });
+                    Task t = new Task(() => { Dispatcher.Invoke(() => { addUser(roger[1], roger[2],current.RemoteEndPoint.ToString()); }); });
                     tasklist.Add(SingletonSecured.Instance.AddTask(t));
                     t.Start();
                     t.Wait();
@@ -359,7 +359,7 @@ namespace Projekt_ps
             }
         }
 
-        private void addUser(string l,string p)
+        private void addUser(string l,string p, string a)
         {
             try
             {
@@ -370,7 +370,8 @@ namespace Projekt_ps
             }
             catch(MySqlException)
             {
-                MessageBox.Show("Change your account login!", "Duplicated login!");
+                //MessageBox.Show("Change your account login!", "Duplicated login!");
+                lst_spis.Items.Add("Duplicated login, client: " +a);
             }
             catch(Exception e)
             {

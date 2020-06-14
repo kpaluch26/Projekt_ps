@@ -158,21 +158,29 @@ namespace Projekt_ps
                     tasklist.Add(SingletonSecured.Instance.AddTask(t));
                     t.Start();
                     t.Wait();
-                    foreach(string x in permits)
-                    {                        
-                        if (x == roger[1]+"|"+ current.LocalEndPoint.ToString())
+                    if (permits.Count > 0)
+                    {
+                        foreach (string x in permits)
                         {
-                            byte[] data = Encoding.ASCII.GetBytes("login|correct");
-                            current.Send(data);
-                            current.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback_loged, current);
-                            help = false;
-                            break;
+                            if (x == roger[1] + "|" + current.LocalEndPoint.ToString())
+                            {
+                                byte[] data = Encoding.ASCII.GetBytes("login|correct");
+                                current.Send(data);
+                                current.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback_loged, current);
+                                help = false;
+                                break;
+                            }
+                            else
+                            {
+                                byte[] data = Encoding.ASCII.GetBytes("login|incorrect");
+                                current.Send(data);
+                            }
                         }
-                        else
-                        {
-                            byte[] data = Encoding.ASCII.GetBytes("login|incorrect");
-                            current.Send(data);
-                        }
+                    }
+                    else
+                    {
+                        byte[] data = Encoding.ASCII.GetBytes("login|incorrect");
+                        current.Send(data);
                     }
                 }
                 //Console.WriteLine("Text is an invalid request");

@@ -43,14 +43,12 @@ namespace Projekt_ps
 
         private void Main()
         {
-            int port = 8888;
-
             if (null == m_oBackgroundWorker)
                 {
                     m_oBackgroundWorker = new BackgroundWorker();
                     m_oBackgroundWorker.DoWork += new DoWorkEventHandler(m_oBackgroundWorker_DoWork);
                 }
-                m_oBackgroundWorker.RunWorkerAsync(port);
+                m_oBackgroundWorker.RunWorkerAsync(PORT);
         }
 
         private void m_oBackgroundWorker_DoWork(object sender, DoWorkEventArgs e)

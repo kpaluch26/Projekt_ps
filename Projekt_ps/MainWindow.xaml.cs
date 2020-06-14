@@ -29,6 +29,7 @@ namespace Projekt_ps
         private List<string> permits=new List<string>();
         private List<string> commits=new List<string>();
         private List<string> reglist=new List<string>();
+
         static object locker = new object();
         static object locker_2 = new object();
 
@@ -264,7 +265,7 @@ namespace Projekt_ps
                 t.Wait();
                 string[] value = null;
                 Monitor.Enter(locker);
-                foreach (string x in reglist)
+                foreach (string x in reglist.Reverse<string>())
                 {
                     value = x.Split('|');
                     if (value[1] == current.LocalEndPoint.ToString())
@@ -272,6 +273,7 @@ namespace Projekt_ps
                         byte[] data = Encoding.ASCII.GetBytes(value[0]);
                         current.Send(data);
                         reglist.Remove(x);
+                        Thread.Sleep(100);
                     }
                 }
                 Monitor.Exit(locker);
@@ -284,7 +286,7 @@ namespace Projekt_ps
                 t.Wait();
                 string[] value = null;
                 Monitor.Enter(locker_2);
-                foreach (string x in commits)
+                foreach (string x in commits.Reverse<string>())
                 {
                     value = x.Split('|');
                     if (value[1] == current.LocalEndPoint.ToString())
@@ -292,6 +294,7 @@ namespace Projekt_ps
                         byte[] data = Encoding.ASCII.GetBytes(value[0]);
                         current.Send(data);
                         commits.Remove(x);
+                        Thread.Sleep(100);
                     }
                 }
                 Monitor.Exit(locker_2);
@@ -402,8 +405,8 @@ namespace Projekt_ps
                     {
                         txt += (dw[j].ToString());
                     }
-                    lst_spis.Items.Add(txt.Remove((txt.Length - 1), 1));
-                    commits.Add(txt.Remove((txt.Length - 1), 1) + "|" + a);
+                    lst_spis.Items.Add(txt);
+                    commits.Add(txt + "|" + a);
                     txt = "";
                 }
                 Monitor.Exit(locker_2);

@@ -30,6 +30,7 @@ namespace Projekt_ps
         private List<string> commits=new List<string>();
         private List<string> reglist=new List<string>();
         static object locker = new object();
+        static object locker_2 = new object();
 
         public MainWindow()
         {
@@ -282,6 +283,7 @@ namespace Projekt_ps
                 t.Start();
                 t.Wait();
                 string[] value = null;
+                Monitor.Enter(locker_2);
                 foreach (string x in commits)
                 {
                     value = x.Split('|');
@@ -292,6 +294,7 @@ namespace Projekt_ps
                         commits.Remove(x);
                     }
                 }
+                Monitor.Exit(locker_2);
             }
             else if(roger[0].ToLower()=="registry")
             {
@@ -390,6 +393,7 @@ namespace Projekt_ps
                 read = task.ExecuteReader();
                 dt.Load(read);
                 DataRow dw;
+                Monitor.Enter(locker_2);
                 for (int i = 0; i < dt.Rows.Count; i++)
                 {
                     dw = dt.Rows[i];
@@ -402,7 +406,9 @@ namespace Projekt_ps
                     commits.Add(txt.Remove((txt.Length - 1), 1) + "|" + a);
                     txt = "";
                 }
+                Monitor.Exit(locker_2);
                 read.Close();
+
             }
             catch (Exception e)
             {

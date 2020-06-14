@@ -27,6 +27,9 @@ namespace Projekt_ps
         private BackgroundWorker m_oBackgroundWorker = null;
         private static List<Task> tasklist = new List<Task>();
         private List<string> permits=new List<string>();
+        private List<string> commits=new List<string>();
+        private List<string> reglist=new List<string>();
+        static object locker = new object();
 
         public MainWindow()
         {
@@ -212,6 +215,14 @@ namespace Projekt_ps
                 updateCounterOfActiveUsers(false);
                 current.Close();
                 clientSockets.Remove(current);
+                foreach (string x in permits)
+                {
+                    if (x == name + "|" + current.LocalEndPoint.ToString())
+                    {
+                        permits.Remove(x);
+                        break;
+                    }
+                }
                 return;
             }
 
@@ -246,15 +257,47 @@ namespace Projekt_ps
             }
             else if(roger[0].ToLower() == "get")
             {
-                Task t = new Task(() => { Dispatcher.Invoke(() => { DownloadData(name,roger[1].ToString()); }); });
+                Task t = new Task(() => { Dispatcher.Invoke(() => { DownloadPersonalizedData(name,roger[1].ToString(), current.LocalEndPoint.ToString()); }); });
                 tasklist.Add(SingletonSecured.Instance.AddTask(t));
                 t.Start();
+                t.Wait();
+                string[] value = null;
+                Monitor.Enter(locker);
+                foreach (string x in reglist)
+                {
+                    value = x.Split('|');
+                    if (value[1] == current.LocalEndPoint.ToString())
+                    {
+                        byte[] data = Encoding.ASCII.GetBytes(value[0]);
+                        current.Send(data);
+                        reglist.Remove(x);
+                    }
+                }
+                Monitor.Exit(locker);
+            }
+            else if (roger[0].ToLower() == "dateget")
+            {
+                Task t = new Task(() => { Dispatcher.Invoke(() => { DownloadAllData(name, current.LocalEndPoint.ToString()); }); });
+                tasklist.Add(SingletonSecured.Instance.AddTask(t));
+                t.Start();
+                t.Wait();
+                string[] value = null;
+                foreach (string x in commits)
+                {
+                    value = x.Split('|');
+                    if (value[1] == current.LocalEndPoint.ToString())
+                    {
+                        byte[] data = Encoding.ASCII.GetBytes(value[0]);
+                        current.Send(data);
+                        commits.Remove(x);
+                    }
+                }
             }
             else if(roger[0].ToLower()=="registry")
             {
                 Dispatcher.Invoke(() => { lst_spis.Items.Add(text); });
 
-                FileStream f = new FileStream("d:\\studia\\Programowanie_C++\\sem_VI\\Projekt\\Projekt_ps\\"+name+".txt", FileMode.Append, FileAccess.Write);
+                FileStream f = new FileStream(name+".txt", FileMode.Append, FileAccess.Write);
                 StreamWriter w = new StreamWriter(f);
                 string[] reg = null;
                 try
@@ -336,7 +379,38 @@ namespace Projekt_ps
             }
         }
 
-        private void DownloadData(string l, string d)
+        private void DownloadAllData(string l, string a)
+        {
+            try
+            {
+                DataTable dt = new DataTable();
+                MySqlDataReader read;
+                string ask = "SELECT DISTINCT r.Data_Created FROM Registry r JOIN Users u ON r.ID_user=u.ID WHERE u.Login = '" + l + "'";
+                MySqlCommand task = new MySqlCommand(ask, msqlcon);
+                read = task.ExecuteReader();
+                dt.Load(read);
+                DataRow dw;
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    dw = dt.Rows[i];
+                    string txt = "";
+                    for (int j = 0; j < dw.ItemArray.Count(); j++)
+                    {
+                        txt += (dw[j].ToString());
+                    }
+                    lst_spis.Items.Add(txt.Remove((txt.Length - 1), 1));
+                    commits.Add(txt.Remove((txt.Length - 1), 1) + "|" + a);
+                    txt = "";
+                }
+                read.Close();
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.ToString());
+            }
+        }
+
+        private void DownloadPersonalizedData(string l, string d, string a)
         {
             try
             {
@@ -347,6 +421,7 @@ namespace Projekt_ps
                 read = task.ExecuteReader();
                 dt.Load(read);
                 DataRow dw;
+                Monitor.Enter(locker);
                 for (int i = 0; i < dt.Rows.Count; i++)
                 {
                     dw = dt.Rows[i];
@@ -356,8 +431,10 @@ namespace Projekt_ps
                         txt+= (dw[j].ToString() + "|");
                     }
                     lst_spis.Items.Add(txt.Remove((txt.Length - 1), 1));
+                    reglist.Add(txt.Remove((txt.Length - 1), 1) + "|" + a);
                     txt = "";
                 }
+                Monitor.Exit(locker);
                 read.Close();
             }
             catch(Exception e)
@@ -396,7 +473,7 @@ namespace Projekt_ps
         {
             try
             {
-                FileStream f = new FileStream("d:\\studia\\Programowanie_C++\\sem_VI\\Projekt\\Projekt_ps\\" + name + ".txt", FileMode.Open, FileAccess.Read);
+                FileStream f = new FileStream(name + ".txt", FileMode.Open, FileAccess.Read);
                 StreamReader r = new StreamReader(f);
                 int id_user=0;
                 try
@@ -411,7 +488,7 @@ namespace Projekt_ps
                 }
                 catch (Exception e)
                 {
-                    MessageBox.Show(e.ToString() + "pierwszy catch");
+                    MessageBox.Show(e.ToString());
                 }
                 finally
                 {
@@ -446,7 +523,7 @@ namespace Projekt_ps
 
                 r.Close();
                 f.Close();
-                File.Delete("d:\\studia\\Programowanie_C++\\sem_VI\\Projekt\\Projekt_ps\\" + name + ".txt");
+                File.Delete(name + ".txt");
             }
             catch (FileNotFoundException e)
             {

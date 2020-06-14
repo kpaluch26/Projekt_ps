@@ -9,6 +9,8 @@ using System.ComponentModel;
 using System.Net.Sockets;
 using System.Net;
 using System.IO;
+using System.Data;
+using System.Linq;
 
 namespace Projekt_ps
 {
@@ -55,7 +57,8 @@ namespace Projekt_ps
             Dispatcher.Invoke(() => { lst_spis.Items.Add("Server setup complete"); });
             while (true)
             {
-                Task.WaitAll(tasklist.ToArray());
+                try { Task.WaitAll(tasklist.ToArray()); }
+                catch { }
             }
         }
 
@@ -118,7 +121,7 @@ namespace Projekt_ps
                 string[] roger = null;
                 try
                 {
-                    roger = text.Split(';');
+                    roger = text.Split('|');
                 }
                 catch
                 {
@@ -127,9 +130,24 @@ namespace Projekt_ps
 
                 if (roger[0].ToLower() == "registration")
                 {
-                        Task t = new Task(() => { Dispatcher.Invoke(() => { addUser(roger[1], roger[2]); }); });
-                        tasklist.Add(SingletonSecured.Instance.AddTask(t));
-                        t.Start();
+                    int h = users_counter;
+
+                    Task t = new Task(() => { Dispatcher.Invoke(() => { addUser(roger[1], roger[2]); }); });
+                    tasklist.Add(SingletonSecured.Instance.AddTask(t));
+                    t.Start();
+                    t.Wait();
+
+                    if (users_counter > h)
+                    {
+                        byte[] data = Encoding.ASCII.GetBytes("registration|correct");
+                        current.Send(data);
+                    }
+                    else
+                    {
+                        byte[] data = Encoding.ASCII.GetBytes("registration|incorrect");
+                        current.Send(data);
+                    }
+                        
                 }
                 else if (roger[0].ToLower() == "login")
                 {
@@ -139,11 +157,18 @@ namespace Projekt_ps
                     t.Wait();
                     foreach(string x in permits)
                     {                        
-                        if (x == roger[1]+";"+ current.LocalEndPoint.ToString())
+                        if (x == roger[1]+"|"+ current.LocalEndPoint.ToString())
                         {
+                            byte[] data = Encoding.ASCII.GetBytes("login|correct");
+                            current.Send(data);
                             current.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback_loged, current);
                             help = false;
                             break;
+                        }
+                        else
+                        {
+                            byte[] data = Encoding.ASCII.GetBytes("login|incorrect");
+                            current.Send(data);
                         }
                     }
                 }
@@ -169,7 +194,7 @@ namespace Projekt_ps
             string[] connect_data = null;
             foreach(string x in permits)
             {
-                connect_data = x.Split(';');
+                connect_data = x.Split('|');
                 if (connect_data[1] == current.LocalEndPoint.ToString())
                 {
                     name=connect_data[0];
@@ -193,7 +218,18 @@ namespace Projekt_ps
             byte[] recBuf = new byte[received];
             Array.Copy(buffer, recBuf, received);
             string text = Encoding.ASCII.GetString(recBuf);
-            if (text.ToLower() == "exit") 
+
+            string[] roger = null;
+            try
+            {
+                roger = text.Split('|');
+            }
+            catch
+            {
+                Dispatcher.Invoke(() => { lst_spis.Items.Add("Client: " + current.RemoteEndPoint + " used unknown commend"); });
+            }
+
+            if (roger[0].ToLower() == "exit") 
             {
                 Dispatcher.Invoke(() => { lst_spis.Items.Add("Client: " + current.RemoteEndPoint + " disconnected"); });
                 updateCounterOfActiveUsers(false);
@@ -202,12 +238,45 @@ namespace Projekt_ps
                 clientSockets.Remove(current);
                 return;
             }
-            else
+            else if (roger[0].ToLower() == "done")
+            {
+                Task t = new Task(() => { Dispatcher.Invoke(() => { SendToBase(name); }); });
+                tasklist.Add(SingletonSecured.Instance.AddTask(t));
+                t.Start();
+            }
+            else if(roger[0].ToLower() == "get")
+            {
+                Task t = new Task(() => { Dispatcher.Invoke(() => { DownloadData(name,roger[1].ToString()); }); });
+                tasklist.Add(SingletonSecured.Instance.AddTask(t));
+                t.Start();
+            }
+            else if(roger[0].ToLower()=="registry")
             {
                 Dispatcher.Invoke(() => { lst_spis.Items.Add(text); });
+
                 FileStream f = new FileStream("d:\\studia\\Programowanie_C++\\sem_VI\\Projekt\\Projekt_ps\\"+name+".txt", FileMode.Append, FileAccess.Write);
                 StreamWriter w = new StreamWriter(f);
-                w.Write(text+"\n");
+                string[] reg = null;
+                try
+                {
+                    reg = text.Split('|');
+                }
+                catch
+                {
+                    Dispatcher.Invoke(() => { lst_spis.Items.Add("Client reg: " + current.RemoteEndPoint + " error"); });
+                }
+                for(int i = 1; i< reg.Length; i++)
+                {
+                    if (i == 1)
+                    {
+                        w.Write(reg[i]);
+                    }
+                    else
+                    {
+                        w.Write("|" + reg[i]);
+                    }
+                }
+                w.Write("\n");
                 w.Close();
                 f.Close();
             }
@@ -267,6 +336,36 @@ namespace Projekt_ps
             }
         }
 
+        private void DownloadData(string l, string d)
+        {
+            try
+            {
+                DataTable dt = new DataTable();
+                MySqlDataReader read;
+                string ask = "SELECT r.Key, r.Value_Name, r.ID_Type, r.Value FROM Registry r JOIN Users u ON r.ID_user=u.ID WHERE u.Login = '" + l + "' AND r.Data_Created='"+ d + "'";
+                MySqlCommand task = new MySqlCommand(ask, msqlcon);
+                read = task.ExecuteReader();
+                dt.Load(read);
+                DataRow dw;
+                for (int i = 0; i < dt.Rows.Count; i++)
+                {
+                    dw = dt.Rows[i];
+                    string txt="";
+                    for (int j = 0; j < dw.ItemArray.Count(); j++)
+                    {
+                        txt+= (dw[j].ToString() + "|");
+                    }
+                    lst_spis.Items.Add(txt.Remove((txt.Length - 1), 1));
+                    txt = "";
+                }
+                read.Close();
+            }
+            catch(Exception e)
+            {
+                MessageBox.Show(e.ToString());
+            }
+        }
+
         private void log_in(string l, string p, string a)
         {
             try
@@ -279,7 +378,7 @@ namespace Projekt_ps
                 if (read.GetInt32(0) == 1)
                 {   
                     lst_spis.Items.Add("Pomyślnie zalogowano się na użytkownika: " + l);
-                    permits.Add(l+";"+a);
+                    permits.Add(l+"|"+a);
                 }
                 else
                 {
@@ -293,6 +392,71 @@ namespace Projekt_ps
             }
         }
         
+        private void SendToBase(string name)
+        {
+            try
+            {
+                FileStream f = new FileStream("d:\\studia\\Programowanie_C++\\sem_VI\\Projekt\\Projekt_ps\\" + name + ".txt", FileMode.Open, FileAccess.Read);
+                StreamReader r = new StreamReader(f);
+                int id_user=0;
+                try
+                {
+                    MySqlDataReader read;                   
+                    string ask = "SELECT ID FROM Users WHERE Login='" + name + "'";
+                    MySqlCommand task = new MySqlCommand(ask, msqlcon);
+                    read = task.ExecuteReader();
+                    read.Read();
+                    id_user = read.GetInt32(0);
+                    read.Close();
+                }
+                catch (Exception e)
+                {
+                    MessageBox.Show(e.ToString() + "pierwszy catch");
+                }
+                finally
+                {
+                    MessageBox.Show(id_user.ToString());
+                }
+                string line;
+                string[] reg = null;
+                while (r.Peek() >= 0)
+                {
+                    //lst_spis.Items.Add(r.ReadLine());
+                    line = r.ReadLine();
+                    try
+                    {
+                        reg = line.Split('|');
+                    }
+                    catch
+                    {
+                        Dispatcher.Invoke(() => { lst_spis.Items.Add("Client reg: " + name + " error"); });
+                    }
+                    try
+                    {
+                        string ask2 = "INSERT INTO Registry(`ID_user`, `Key`, `Value_Name`, `ID_type`, `Value`, `Data_created`) VALUES (" + id_user + ",'" + reg[0] + "','" + reg[1] + "'," + reg[2] + ",'" + reg[3] + "','" + reg[4] + "')";
+                        MySqlCommand task = new MySqlCommand(ask2, msqlcon);
+                        task.ExecuteNonQuery();
+                    }
+                    catch(Exception e)
+                    {
+                        MessageBox.Show(e.ToString());
+                    }
+
+                }
+
+                r.Close();
+                f.Close();
+                File.Delete("d:\\studia\\Programowanie_C++\\sem_VI\\Projekt\\Projekt_ps\\" + name + ".txt");
+            }
+            catch (FileNotFoundException e)
+            {
+                lst_spis.Items.Add("Nie odnaleziono pliku użytkownika!");
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.ToString());
+            }
+        }
 
         private int CheckUsers()
         {
@@ -313,7 +477,7 @@ namespace Projekt_ps
                 MessageBox.Show("Failed to connect to the database!", "Connection error");
                 return 0;
             }
-        }    
+        }
 
         private void MainWindow_Closing(object sender, CancelEventArgs e)
         {

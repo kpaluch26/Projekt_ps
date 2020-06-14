@@ -356,7 +356,7 @@ namespace Projekt_ps
             try
             {
                 msqlcon.Open();
-                MessageBox.Show("Połączono z bazą danych", "Sukces");
+                //MessageBox.Show("Połączono z bazą danych", "Sukces");
                 users_counter = CheckUsers();
                 lbl_all_users.Content = users_counter.ToString();
             }

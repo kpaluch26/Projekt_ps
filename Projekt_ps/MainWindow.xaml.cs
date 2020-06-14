@@ -276,7 +276,7 @@ namespace Projekt_ps
                     value = x.Split('|');
                     if (value[4] == current.LocalEndPoint.ToString())
                     {
-                        byte[] data = Encoding.ASCII.GetBytes(value[0]+"|"+value[1]+"|"+value[2]+"|"+value[3]);
+                        byte[] data = Encoding.ASCII.GetBytes("registry|"+value[0]+"|"+value[1]+"|"+value[2]+"|"+value[3]);
                         current.Send(data);
                         reglist.Remove(x);
                         Thread.Sleep(300);

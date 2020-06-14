@@ -498,10 +498,6 @@ namespace Projekt_ps
                 {
                     MessageBox.Show(e.ToString());
                 }
-                finally
-                {
-                    MessageBox.Show(id_user.ToString());
-                }
                 string line;
                 string[] reg = null;
                 while (r.Peek() >= 0)
@@ -518,6 +514,7 @@ namespace Projekt_ps
                     }
                     try
                     {
+                        reg[0] = reg[0].Replace("\\", "\\\\");
                         string ask2 = "INSERT INTO Registry(`ID_user`, `Key`, `Value_Name`, `ID_type`, `Value`, `Data_created`) VALUES (" + id_user + ",'" + reg[0] + "','" + reg[1] + "'," + reg[2] + ",'" + reg[3] + "','" + reg[4] + "')";
                         MySqlCommand task = new MySqlCommand(ask2, msqlcon);
                         task.ExecuteNonQuery();
@@ -528,7 +525,6 @@ namespace Projekt_ps
                     }
 
                 }
-
                 r.Close();
                 f.Close();
                 File.Delete(name + ".txt");

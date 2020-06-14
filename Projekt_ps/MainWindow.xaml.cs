@@ -266,9 +266,9 @@ namespace Projekt_ps
                 foreach (string x in reglist.Reverse<string>())
                 {
                     value = x.Split('|');
-                    if (value[1] == current.LocalEndPoint.ToString())
+                    if (value[4] == current.LocalEndPoint.ToString())
                     {
-                        byte[] data = Encoding.ASCII.GetBytes(value[0]);
+                        byte[] data = Encoding.ASCII.GetBytes(value[0]+"|"+value[1]+"|"+value[2]+"|"+value[3]);
                         current.Send(data);
                         reglist.Remove(x);
                         Thread.Sleep(300);

@@ -271,7 +271,7 @@ namespace Projekt_ps
                         byte[] data = Encoding.ASCII.GetBytes(value[0]);
                         current.Send(data);
                         reglist.Remove(x);
-                        Thread.Sleep(100);
+                        Thread.Sleep(300);
                     }
                 }
                 Monitor.Exit(locker);
@@ -292,7 +292,7 @@ namespace Projekt_ps
                         byte[] data = Encoding.ASCII.GetBytes(value[0]);
                         current.Send(data);
                         commits.Remove(x);
-                        Thread.Sleep(100);
+                        Thread.Sleep(300);
                     }
                 }
                 Monitor.Exit(locker_2);

@@ -90,7 +90,6 @@ namespace Projekt_ps
             Socket current = (Socket)AR.AsyncState;
             int received;
             bool help = true;
-
             try
             {
                 received = current.EndReceive(AR);
@@ -104,11 +103,9 @@ namespace Projekt_ps
                 clientSockets.Remove(current);
                 return;
             }
-
             byte[] recBuf = new byte[received];
             Array.Copy(buffer, recBuf, received);
             string text = Encoding.ASCII.GetString(recBuf);
-
             if (text.ToLower() == "exit") // Client wants to exit gracefully
             {
                 Dispatcher.Invoke(() => { lst_spis.Items.Add("Client: " + current.RemoteEndPoint + " disconnected"); }); 
@@ -183,13 +180,6 @@ namespace Projekt_ps
                         current.Send(data);
                     }
                 }
-                //Console.WriteLine("Text is an invalid request");
-                //byte[] data = Encoding.ASCII.GetBytes("Invalid request");
-                //current.Send(data);
-                //Console.WriteLine("Warning Sent");
-                //Task t = new Task(() => { Dispatcher.Invoke(() => { lst_spis.Items.Add("Received Text from " + current.RemoteEndPoint + ": " + text); }); });
-                //tasklist.Add(SingletonSecured.Instance.AddTask(t));
-                //t.Start();
                 if (help)
                 {
                     current.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback, current);
